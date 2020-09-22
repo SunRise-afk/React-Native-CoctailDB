@@ -78,7 +78,6 @@ const App = () => {
     isFetching = initializing,
     inputObject = appliedFilters,
   ) => {
-    console.log(inputObject, isFetching);
     setIsNothingToFetch(false);
     setContent((prev) => []);
     let result = [];
