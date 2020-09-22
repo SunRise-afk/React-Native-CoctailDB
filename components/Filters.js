@@ -2,12 +2,15 @@ import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View, Image} from 'react-native';
 
 export const Filters = (props) => {
-  console.log(props);
+  const onPressApplyHandler = () => {
+    props.onSubmitHandler(true);
+    props.navigation.goBack();
+  };
   return (
     <View>
       <View>
-        {props.filterCategorys ? (
-          props.filterCategorys.map((item) => {
+        {props.filterCategories ? (
+          props.filterCategories.map((item) => {
             return (
               <TouchableOpacity
                 style={styles.filterItemContainer}
@@ -28,7 +31,13 @@ export const Filters = (props) => {
           <Text>Just a few seconds...</Text>
         )}
       </View>
-      <View></View>
+      <TouchableOpacity
+        style={styles.applyButton}
+        onPress={onPressApplyHandler}>
+        <View style={styles.applyTextContainer}>
+          <Text style={styles.applyText}>APPLY</Text>
+        </View>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -37,7 +46,7 @@ const styles = StyleSheet.create({
   filterItemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 70,
+    height: 40,
     marginVertical: 5,
   },
   filterItemText: {
@@ -48,5 +57,25 @@ const styles = StyleSheet.create({
   checkBoxIcon: {
     position: 'absolute',
     right: 20,
+  },
+  applyButton: {
+    height: 50,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  applyTextContainer: {
+    height: '100%',
+    width: '90%',
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+  },
+  applyText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });

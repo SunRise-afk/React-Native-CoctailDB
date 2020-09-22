@@ -7,7 +7,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, View, Text, StatusBar} from 'react-native';
+import {StyleSheet, Text, StatusBar} from 'react-native';
 import 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -18,13 +18,86 @@ import {Header} from './components/Header';
 const Stack = createStackNavigator();
 
 const App = () => {
-  const [wholeFilterCategorys, setWholeFilterCategorys] = useState([]);
-  const [tmpState, settmpState] = useState(['ordinary drinks', 'beer']);
+  const [wholeFilterCategories, setWholeFilterCategories] = useState([]);
   const [appliedFilters, setAppliedFilters] = useState({});
-  const [tmpAppliedFilters, setTmpAppliedFilters] = useState({
-    'ordinary drinks': true,
-    beer: true,
-  });
+  const [initializing, setInitializing] = useState(true);
+  const [filteredArray, setFilteredArray] = useState({});
+  const [content, setContent] = useState([]);
+  const [isNothingToFetch, setIsNothingToFetch] = useState(false);
+  const getContent = (arrayForFetching = filteredArray) => {
+    if (!isNothingToFetch || arrayForFetching.categories.length == 0) {
+      if (
+        arrayForFetching.numOfReachedCategories ==
+        arrayForFetching.categories.length
+      ) {
+        setContent((prev) => {
+          return [
+            ...prev,
+            {
+              idDrink: Date.now().toString(),
+              strDrink: "Sorry, but it's the end of list. Try other filters.",
+            },
+          ];
+        });
+        setIsNothingToFetch(true);
+      } else {
+        fetch(
+          `https://www.thecocktaildb.com/api/json/v1/1/filter.php?c=${
+            arrayForFetching.categories[arrayForFetching.numOfReachedCategories]
+          }`,
+        )
+          .then((response) => {
+            return response.json();
+          })
+          .then((response) => {
+            setContent((prev) => {
+              return [
+                ...prev,
+                {
+                  idDrink: Date.now().toString(),
+                  strDrink:
+                    arrayForFetching.categories[
+                      arrayForFetching.numOfReachedCategories
+                    ],
+                },
+                ...response.drinks,
+              ];
+            });
+            setFilteredArray((prev) => {
+              return {
+                ...prev,
+                numOfReachedCategories: prev.numOfReachedCategories + 1,
+              };
+            });
+            setInitializing((prev) => false);
+          });
+      }
+    }
+  };
+  const getFilteredArray = (
+    isFetching = initializing,
+    inputObject = appliedFilters,
+  ) => {
+    console.log(inputObject, isFetching);
+    setIsNothingToFetch(false);
+    setContent((prev) => []);
+    let result = [];
+    for (let key in inputObject) {
+      if (inputObject[key]) {
+        result.push(key);
+      }
+    }
+    setFilteredArray({
+      categories: result,
+      numOfReachedCategories: 0,
+    });
+    if (isFetching) {
+      getContent({
+        categories: result.sort(),
+        numOfReachedCategories: 0,
+      });
+    }
+  };
   useEffect(() => {
     fetch('https://www.thecocktaildb.com/api/json/v1/1/list.php?c=list')
       .then((response) => {
@@ -38,22 +111,23 @@ const App = () => {
         data.forEach((item) => {
           filtersToApply[item] = true;
         });
-        // console.log(data);
-        setWholeFilterCategorys(data);
+        setWholeFilterCategories(data);
         setAppliedFilters(filtersToApply);
-      });
+        getFilteredArray(initializing, filtersToApply);
+      })
+      .catch((error) => console.log(error));
   }, []);
 
   const checkboxHandler = (filter) => {
-    if (tmpAppliedFilters[filter]) {
-      setTmpAppliedFilters((prev) => {
+    if (appliedFilters[filter]) {
+      setAppliedFilters((prev) => {
         return {
           ...prev,
           [filter]: false,
         };
       });
     } else {
-      setTmpAppliedFilters((prev) => {
+      setAppliedFilters((prev) => {
         return {
           ...prev,
           [filter]: true,
@@ -84,15 +158,26 @@ const App = () => {
                 },
               };
             }}>
-            {(props) => <Home {...props} extraData={'allo'} />}
+            {(props) =>
+              initializing ? (
+                <Text>loading...</Text>
+              ) : (
+                <Home
+                  {...props}
+                  content={content}
+                  onEndReachedHandler={getContent}
+                />
+              )
+            }
           </Stack.Screen>
           <Stack.Screen name="Filters">
             {(props) => (
               <Filters
                 {...props}
-                filterCategorys={tmpState}
-                appliedFilters={tmpAppliedFilters}
+                filterCategories={wholeFilterCategories}
+                appliedFilters={appliedFilters}
                 checkboxHandler={checkboxHandler}
+                onSubmitHandler={getFilteredArray}
               />
             )}
           </Stack.Screen>
